@@ -1,0 +1,25 @@
+rules:
+  - id: smoking_education_module
+    trigger:
+      description: Patient reports active smoking or tobacco use
+      keywords:
+        - "smoke"
+        - "smoker"
+        - "cigarette"
+    task: "Assign the Wellness and Fertility educational module"
+    rationale: "Smoking is associated with decreased fertility and adverse pregnancy outcomes. Patients who smoke should receive targeted education."
+
+  - id: genetic_carrier_screening
+    trigger:
+      description: Patient has not completed genetic carrier screening
+      keywords:
+        - "carrier screening"
+        - "genetic testing"
+        - "carrier panel"
+      negative_keywords:
+        - "completed"
+        - "done"
+    task: "Assign the Carrier Screening workflow"
+    rationale: "Carrier screening identifies inherited conditions that could affect offspring and is standard in fertility work-ups."
+
+  # Additional rules can be added below following the same schema 

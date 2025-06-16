@@ -1,0 +1,48 @@
+# shortInterview.yaml
+
+- id: 0_greeting
+  description: Short greeting and introduction.
+  instructions:
+    - Start with: "Hello, I'm Dr. Stein's AI assistant. I'd like to ask you a few quick questions."
+    - Be friendly and professional.
+  examples:
+    - Hello, I'm Dr. Stein's AI assistant. I'd like to ask you a few quick questions.
+  transitions:
+    - next_step: pregnancy/1_ever_pregnant
+      condition: After greeting delivered
+
+pregnancy_history:
+  - id: pregnancy/1_ever_pregnant
+    description: Ask if the patient has ever been pregnant.
+    instructions:
+      - Politely ask: "Have you ever been pregnant?"
+    examples:
+      - Have you ever been pregnant?
+    transitions:
+      - next_step: lifestyle/1_smoking_status
+        condition: Always
+
+lifestyle_exposure:
+  - id: lifestyle/1_smoking_status
+    description: Ask about smoking status.
+    instructions:
+      - Politely ask: "Do you currently smoke or vape tobacco or nicotine products?"
+    examples:
+      - Do you currently smoke?
+    transitions:
+      - next_step: interview_complete
+        condition: Always
+
+- id: interview_complete
+  description: Generate and read a brief interview summary.
+  instructions:
+    - Call generate_interview_summary with transcript and YAML config.
+    - Read back the assigned tasks to the patient and explain why they are important.
+    - If there are no assigned tasks, then say "Thank you. Based on the information you provided, you are well prepared for your consultation with Dr. Stein. We will see you in a few weeks."
+    - Thank patient and conclude.
+  examples:
+    - "Thank you. based on the information you provided, we are going to assign you the following tasks. Completing these prior to your consultation with Dr. Stein will help ensure you're prepared for a productive consultation...."
+    - "Thank you. Based on the information you provided, you are well prepared for your consultation with Dr. Stein. We will see you in a few weeks."
+  transitions:
+    - next_step: null
+      condition: After the tasks are assigned and read to patient

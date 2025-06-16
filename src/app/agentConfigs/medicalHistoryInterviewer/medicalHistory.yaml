@@ -1,0 +1,185 @@
+# pregnancyStates.yaml
+- id: 0_greeting
+  description: Begin with a warm greeting and introduce the purpose of the interview.
+  instructions:
+    - Start with: "Hello, I'm Dr. Stein's AI assistant. I'd like to ask you a few questions to better understand your situation and how we can help you. This will help us ensure we're prepared for your upcoming appointment. "
+    - Be warm, professional, and reassuring.
+    - IMPORTANT:After the greeting, immediately proceed to the first question.
+  examples:
+    - Hello, I'm Dr. Stein's AI assistant. I'd like to ask you a few questions to better understand your situation and how we can help you. This will help us ensure we're prepared for your upcoming appointment.
+  transitions:
+    - next_step: pregnancy/1_ever_pregnant
+      condition: After delivering the greeting.
+
+
+
+# ------------------------------------------------------------
+# Pregnancy History Section
+# ------------------------------------------------------------
+
+pregnancy_history:
+  - id: pregnancy/1_ever_pregnant
+    description: "Determine if the patient has ever been pregnant."
+    instructions:
+      - Politely ask: "Have you ever been pregnant?"
+    examples:
+      - Have you ever been pregnant?
+    transitions:
+      - next_step: pregnancy/2_total_pregnancies
+        condition: "If answer is yes"
+      - next_step: interview_tasks
+        condition: "If answer is no"
+
+  - id: pregnancy/2_total_pregnancies
+    description: "Ask total number of pregnancies."
+    instructions:
+      - Politely ask: "How many pregnancies have you had in total?"
+    examples:
+      - How many pregnancies have you had?
+    transitions:
+      - next_step: pregnancy/3_pregnancy_loop
+        condition: "Once total pregnancies are confirmed"
+
+  - id: pregnancy/3_pregnancy_loop
+    description: "Collect detailed information for each pregnancy."
+    instructions:
+      - For each pregnancy, confirm: "Let's discuss your pregnancy #[number]."
+      - Ask: "What was the outcome (live birth, miscarriage, stillbirth, ectopic, termination, ongoing)?"
+    examples:
+      - What was the outcome of your pregnancy?
+    transitions:
+      - next_step: pregnancy/4_outcome_specific
+        condition: "Once outcome is identified"
+
+  - id: pregnancy/4_outcome_specific
+    description: "Ask specific follow-up questions based on pregnancy outcome."
+    instructions:
+      - If live birth:
+          - Ask delivery mode, birth weight, maternal/neonatal complications.
+      - If miscarriage:
+          - Ask gestational age at loss, management, products tested.
+      - If stillbirth:
+          - Ask gestational age, cause.
+      - If ectopic:
+          - Ask location, treatment.
+      - If termination:
+          - Ask gestational age, reason, method.
+      - If ongoing:
+          - Ask current gestational age, complications.
+    examples:
+      - For live birth: "Was the delivery vaginal or via C-section?"
+      - For miscarriage: "How was your miscarriage managed?"
+    transitions:
+      - next_step: pregnancy/5_another_pregnancy
+        condition: "After specific outcome details are collected"
+
+  - id: pregnancy/5_another_pregnancy
+    description: "Check if the patient has another pregnancy to report."
+    instructions:
+      - Politely ask: "Do you have another pregnancy to add?"
+    examples:
+      - Do you have another pregnancy to add?
+    transitions:
+      - next_step: pregnancy/3_pregnancy_loop
+        condition: "If answer is yes"
+      - next_step: pregnancy/6_global_history
+        condition: "If answer is no"
+
+  - id: pregnancy/6_global_history
+    description: "Collect history-wide questions across all pregnancies."
+    instructions:
+      - Ask about history of gestational diabetes, high blood pressure, cholestasis, blood clots, or cerclage.
+    examples:
+      - Did you have gestational diabetes or high blood pressure during any pregnancy?
+    transitions:
+      - next_step: lifestyle/1_smoking_status
+        condition: "Once global pregnancy history confirmed"
+
+# ------------------------------------------------------------
+# Lifestyle / Exposure Section
+# ------------------------------------------------------------
+
+lifestyle_exposure:
+  - id: lifestyle/1_smoking_status
+    description: "Assess tobacco or nicotine use."
+    instructions:
+      - Politely ask: "Do you currently smoke or vape any tobacco or nicotine products? (yes/no)"
+      - If yes, follow up: "Approximately how many cigarettes (or equivalent) per day and for how many years?"
+    examples:
+      - Do you smoke?
+    transitions:
+      - next_step: lifestyle/2_alcohol_use
+        condition: "Once smoking status (and any details) confirmed"
+
+  - id: lifestyle/2_alcohol_use
+    description: "Assess alcohol consumption."
+    instructions:
+      - Politely ask: "Do you drink alcohol? (yes/no)"
+      - If yes, follow up: "On average, how many alcoholic drinks do you have per week?"
+    examples:
+      - Do you drink alcohol?
+    transitions:
+      - next_step: lifestyle/3_cannabis_use
+        condition: "Once alcohol use (and any details) confirmed"
+
+  - id: lifestyle/3_cannabis_use
+    description: "Assess cannabis or recreational drug use."
+    instructions:
+      - Politely ask: "Do you use cannabis or any recreational drugs? (yes/no)"
+      - If yes, follow up: "Please specify the substance(s) and how often you use them."
+    examples:
+      - Do you use cannabis or recreational drugs?
+    transitions:
+      - next_step: lifestyle/4_caffeine_intake
+        condition: "Once drug use (and any details) confirmed"
+
+  - id: lifestyle/4_caffeine_intake
+    description: "Assess caffeine consumption."
+    instructions:
+      - Politely ask: "How many caffeinated beverages (coffee, tea, energy drinks, soda) do you drink per day on average?"
+    examples:
+      - How many cups of coffee do you drink each day?
+    transitions:
+      - next_step: lifestyle/5_exercise
+        condition: "Once caffeine intake recorded"
+
+  - id: lifestyle/5_exercise
+    description: "Assess physical activity level."
+    instructions:
+      - Politely ask: "How often do you exercise each week and what types of activities do you do?"
+    examples:
+      - How many days a week do you exercise?
+    transitions:
+      - next_step: interview_tasks
+        condition: "Once exercise habits recorded"
+
+# ------------------------------------------------------------
+# Interview Completion
+# ------------------------------------------------------------
+
+- id: interview_tasks
+  description: "Generate and discuss the patient's next-step task list."
+  instructions:
+    - "IMPORTANT: Call the generate_task_list tool with the full conversation transcript."
+    - "Read the tasks (if any) to the patient and explain why each is important."
+    - "If there are no tasks, reassure the patient they are well prepared for their upcoming appointment."
+    - "Ask the patient if they have any questions about the tasks."
+  examples:
+    - "Based on what you've told me, here are a few next steps I'd recommend before your appointment..."
+  transitions:
+    - next_step: interview_complete
+      condition: "After tasks have been discussed"
+
+- id: interview_complete
+  description: "Generate the final SOAP summary (with tasks in Plan) and conclude."
+  instructions:
+    - "Call generate_interview_summary with the transcript, YAML config, and tasks array to create the final note."
+    - "Let the patient know the summary has been recorded for their clinician."
+    - "Thank the patient warmly and conclude the call."
+  examples:
+    - "Thank you for your time today. I've recorded your information and next steps for Dr. Stein to review. We look forward to seeing you soon."
+  transitions:
+    - next_step: null
+      condition: "After summary is generated and patient is thanked"
+
+
