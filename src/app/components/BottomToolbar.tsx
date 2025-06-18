@@ -59,14 +59,8 @@ function BottomToolbar({
   }
 
   return (
-    <div className="p-4 flex flex-row items-center justify-center gap-x-8">
-      <button
-        onClick={onToggleConnection}
-        className={getConnectionButtonClasses()}
-        disabled={isConnecting}
-      >
-        {getConnectionButtonLabel()}
-      </button>
+    <div className="hidden">
+      {/* All controls moved to header or hidden - keeping for functionality */}
 
       <div className="flex flex-row items-center gap-2">
         {/* Hidden but functional - keep for functionality */}

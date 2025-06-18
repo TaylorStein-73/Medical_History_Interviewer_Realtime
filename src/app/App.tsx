@@ -11,6 +11,7 @@ import Events from "./components/Events";
 import BottomToolbar from "./components/BottomToolbar";
 import PWAInstaller from "./components/PWAInstaller";
 import PWADebugger from "./components/PWADebugger";
+import ConnectionStatus from "./components/ConnectionStatus";
 
 // Types
 import { SessionStatus } from "@/app/types";
@@ -458,10 +459,14 @@ function App() {
             />
           </div>
           <div>
-            EngagedMD <span className="text-gray-500">Medical History Interview Demo</span>
+            EngagedMD <span className="text-gray-500">Medical History Interview</span>
           </div>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
+          <ConnectionStatus 
+            sessionStatus={sessionStatus}
+            onToggleConnection={onToggleConnection}
+          />
           {/* Hidden but functional dropdowns - keep for functionality */}
           <div className="hidden">
             <label className="flex items-center text-base gap-1 mr-2 font-medium">
@@ -527,7 +532,7 @@ function App() {
         </div>
       </div>
 
-      <div className="flex flex-1 gap-2 px-2 overflow-hidden relative">
+      <div className="flex flex-1 px-2 pb-4 overflow-hidden relative">
         <Transcript
           userText={userText}
           setUserText={setUserText}
