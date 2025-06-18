@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./lib/envSetup";
 
@@ -6,8 +6,6 @@ export const metadata: Metadata = {
   title: "Medical History Interviewer",
   description: "AI-powered medical history interviewer with task assignment",
   manifest: "/manifest.json",
-  themeColor: "#ec4899",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -25,6 +23,14 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#ec4899",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -40,7 +46,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="MedHistory" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </head>
       <body className={`antialiased`}>{children}</body>
     </html>

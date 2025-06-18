@@ -2,42 +2,75 @@
 
 import { useEffect, useState } from 'react';
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
+
 export default function PWAInstaller() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    // Check if app is already installed
+    const checkIfInstalled = () => {
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        setIsInstalled(true);
+        return true;
+      }
+      return false;
+    };
+
+    if (checkIfInstalled()) {
+      console.log('[PWA] App is already installed');
+      return;
+    }
+
     // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          console.log('SW registered: ', registration);
+          console.log('[PWA] SW registered: ', registration);
         })
         .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
+          console.log('[PWA] SW registration failed: ', registrationError);
         });
     }
 
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('[PWA] beforeinstallprompt event fired');
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Stash the event so it can be triggered later
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       // Update UI to notify the user they can install the PWA
       setShowInstallButton(true);
     };
 
     // Listen for the appinstalled event
     const handleAppInstalled = () => {
-      console.log('PWA was installed');
+      console.log('[PWA] PWA was installed');
       setShowInstallButton(false);
       setDeferredPrompt(null);
+      setIsInstalled(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
+
+    // For debugging - check if the event would fire
+    setTimeout(() => {
+      if (!deferredPrompt && !isInstalled) {
+        console.log('[PWA] beforeinstallprompt event did not fire - this is normal for some browsers/conditions');
+      }
+    }, 3000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -46,8 +79,12 @@ export default function PWAInstaller() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      console.log('[PWA] No deferred prompt available');
+      return;
+    }
 
+    console.log('[PWA] Showing install prompt');
     // Show the install prompt
     deferredPrompt.prompt();
     
@@ -55,9 +92,9 @@ export default function PWAInstaller() {
     const { outcome } = await deferredPrompt.userChoice;
     
     if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
+      console.log('[PWA] User accepted the install prompt');
     } else {
-      console.log('User dismissed the install prompt');
+      console.log('[PWA] User dismissed the install prompt');
     }
     
     // Clear the deferredPrompt variable
@@ -65,13 +102,15 @@ export default function PWAInstaller() {
     setShowInstallButton(false);
   };
 
-  if (!showInstallButton) return null;
+  // Don't show if already installed or no prompt available
+  if (isInstalled || !showInstallButton) return null;
 
   return (
     <div className="fixed top-4 right-4 z-50">
       <button
         onClick={handleInstallClick}
-        className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm font-medium"
+        className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm font-medium transition-colors"
+        title="Install Medical History Interviewer as an app"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8l-8-8-8 8" />
