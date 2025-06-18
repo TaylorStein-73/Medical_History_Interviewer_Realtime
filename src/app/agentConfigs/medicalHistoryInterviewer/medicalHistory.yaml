@@ -98,58 +98,19 @@ pregnancy_history:
 # ------------------------------------------------------------
 
 lifestyle_exposure:
-  - id: lifestyle/1_smoking_status
-    description: "Assess tobacco or nicotine use."
+  - id: lifestyle/1_substance_use
+    description: "Assess smoking, alcohol, and cannabis/recreational drug use."
     instructions:
-      - Politely ask: "Do you currently smoke or vape any tobacco or nicotine products? (yes/no)"
-      - If yes, follow up: "Approximately how many cigarettes (or equivalent) per day and for how many years?"
+      - Politely ask: "Do you currently smoke, drink alcohol, or use cannabis/recreational drugs? (yes/no)"
+      - If yes, follow up individually:
+          - Smoking: "Do you smoke or vape tobacco/nicotine products? If yes, how many per day and for how many years?"
+          - Alcohol: "Do you drink alcohol? If yes, how many alcoholic drinks do you have per week?"
+          - Cannabis/Drugs: "Do you use cannabis or recreational drugs? If yes, please specify the substances and frequency of use."
     examples:
-      - Do you smoke?
-    transitions:
-      - next_step: lifestyle/2_alcohol_use
-        condition: "Once smoking status (and any details) confirmed"
-
-  - id: lifestyle/2_alcohol_use
-    description: "Assess alcohol consumption."
-    instructions:
-      - Politely ask: "Do you drink alcohol? (yes/no)"
-      - If yes, follow up: "On average, how many alcoholic drinks do you have per week?"
-    examples:
-      - Do you drink alcohol?
-    transitions:
-      - next_step: lifestyle/3_cannabis_use
-        condition: "Once alcohol use (and any details) confirmed"
-
-  - id: lifestyle/3_cannabis_use
-    description: "Assess cannabis or recreational drug use."
-    instructions:
-      - Politely ask: "Do you use cannabis or any recreational drugs? (yes/no)"
-      - If yes, follow up: "Please specify the substance(s) and how often you use them."
-    examples:
-      - Do you use cannabis or recreational drugs?
-    transitions:
-      - next_step: lifestyle/4_caffeine_intake
-        condition: "Once drug use (and any details) confirmed"
-
-  - id: lifestyle/4_caffeine_intake
-    description: "Assess caffeine consumption."
-    instructions:
-      - Politely ask: "How many caffeinated beverages (coffee, tea, energy drinks, soda) do you drink per day on average?"
-    examples:
-      - How many cups of coffee do you drink each day?
-    transitions:
-      - next_step: lifestyle/5_exercise
-        condition: "Once caffeine intake recorded"
-
-  - id: lifestyle/5_exercise
-    description: "Assess physical activity level."
-    instructions:
-      - Politely ask: "How often do you exercise each week and what types of activities do you do?"
-    examples:
-      - How many days a week do you exercise?
+      - Do you smoke, drink alcohol, or use recreational drugs?
     transitions:
       - next_step: interview_tasks
-        condition: "Once exercise habits recorded"
+        condition: "Once substance use (and any details) confirmed"
 
 # ------------------------------------------------------------
 # Interview Completion
