@@ -1,12 +1,10 @@
 # pregnancyStates.yaml
 - id: 0_greeting
-  description: Begin with a warm greeting and introduce the purpose of the interview.
+  description: "What brings you to our clinic?"
   instructions:
-    - Start with: "Hello, I'm Dr. Stein's AI assistant. I'd like to ask you a few questions to better understand your situation and how we can help you. This will help us ensure we're prepared for your upcoming appointment. "
-    - Be warm, professional, and reassuring.
-    - IMPORTANT:After the greeting, immediately proceed to the first question.
+    - Start with: "Hello, I'm Dr. Stein's AI assistant. I'd like to ask you a few questions to better understand your situation and how we can help you. This will help us ensure we're prepared for your upcoming appointment. What brings you to {clinic_name} today?"
   examples:
-    - Hello, I'm Dr. Stein's AI assistant. I'd like to ask you a few questions to better understand your situation and how we can help you. This will help us ensure we're prepared for your upcoming appointment.
+    - Hello, I'm Dr. Stein's AI assistant. I'd like to ask you a few questions to better understand your situation and how we can help you. This will help us ensure we're prepared for your upcoming appointment. What brings you to {clinic_name} today?
   transitions:
     - next_step: pregnancy/1_ever_pregnant
       condition: After delivering the greeting.
@@ -163,7 +161,7 @@ lifestyle_exposure:
     - "IMPORTANT: Call the generate_task_list tool with the full conversation transcript."
     - "Read the tasks (if any) to the patient and explain why each is important."
     - "If there are no tasks, reassure the patient they are well prepared for their upcoming appointment."
-    - "Ask the patient if they have any questions about the tasks."
+    - "Tell the patient that the tasks will be added to their EngagedMD portal, where they can complete them prior to their appointment."
   examples:
     - "Based on what you've told me, here are a few next steps I'd recommend before your appointment..."
   transitions:
@@ -173,7 +171,7 @@ lifestyle_exposure:
 - id: interview_complete
   description: "Generate the final SOAP summary (with tasks in Plan) and conclude."
   instructions:
-    - "Call generate_interview_summary with the transcript, YAML config, and tasks array to create the final note."
+    - "IMPORTANT:Call generate_interview_summary with the transcript, YAML config, and tasks array to create the final note."
     - "Let the patient know the summary has been recorded for their clinician."
     - "Thank the patient warmly and conclude the call."
   examples:

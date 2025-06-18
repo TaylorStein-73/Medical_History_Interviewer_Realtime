@@ -100,55 +100,64 @@ function BottomToolbar({
       </div>
 
       <div className="flex flex-row items-center gap-1">
-        <input
-          id="audio-playback"
-          type="checkbox"
-          checked={isAudioPlaybackEnabled}
-          onChange={(e) => setIsAudioPlaybackEnabled(e.target.checked)}
-          disabled={!isConnected}
-          className="w-4 h-4"
-        />
-        <label
-          htmlFor="audio-playback"
-          className="flex items-center cursor-pointer"
-        >
-          Audio playback
-        </label>
+        {/* Hidden but functional - keep for functionality */}
+        <div className="hidden">
+          <input
+            id="audio-playback"
+            type="checkbox"
+            checked={isAudioPlaybackEnabled}
+            onChange={(e) => setIsAudioPlaybackEnabled(e.target.checked)}
+            disabled={!isConnected}
+            className="w-4 h-4"
+          />
+          <label
+            htmlFor="audio-playback"
+            className="flex items-center cursor-pointer"
+          >
+            Audio playback
+          </label>
+        </div>
       </div>
 
       <div className="flex flex-row items-center gap-2">
-        <input
-          id="logs"
-          type="checkbox"
-          checked={isEventsPaneExpanded}
-          onChange={(e) => setIsEventsPaneExpanded(e.target.checked)}
-          className="w-4 h-4"
-        />
-        <label htmlFor="logs" className="flex items-center cursor-pointer">
-          Logs
-        </label>
+        {/* Hidden but functional - keep for functionality */}
+        <div className="hidden">
+          <input
+            id="logs"
+            type="checkbox"
+            checked={isEventsPaneExpanded}
+            onChange={(e) => setIsEventsPaneExpanded(e.target.checked)}
+            className="w-4 h-4"
+          />
+          <label htmlFor="logs" className="flex items-center cursor-pointer">
+            Logs
+          </label>
+        </div>
       </div>
 
       <div className="flex flex-row items-center gap-2">
-        <div>Codec:</div>
-        {/*
-          Codec selector – Lets you force the WebRTC track to use 8 kHz 
-          PCMU/PCMA so you can preview how the agent will sound 
-          (and how ASR/VAD will perform) when accessed via a 
-          phone network.  Selecting a codec reloads the page with ?codec=...
-          which our App-level logic picks up and applies via a WebRTC monkey
-          patch (see codecPatch.ts).
-        */}
-        <select
-          id="codec-select"
-          value={codec}
-          onChange={handleCodecChange}
-          className="border border-gray-300 rounded-md px-2 py-1 focus:outline-none cursor-pointer"
-        >
-          <option value="opus">Opus (48 kHz)</option>
-          <option value="pcmu">PCMU (8 kHz)</option>
-          <option value="pcma">PCMA (8 kHz)</option>
-        </select>
+        {/* Hidden but functional - keep for functionality */}
+        <div className="hidden">
+          <div>Codec:</div>
+          {/*
+            Codec selector – Lets you force the WebRTC track to use 8 kHz 
+            PCMU/PCMA so you can preview how the agent will sound 
+            (and how ASR/VAD will perform) when accessed via a 
+            phone network.  Selecting a codec reloads the page with ?codec=...
+            which our App-level logic picks up and applies via a WebRTC monkey
+            patch (see codecPatch.ts).
+          */}
+          <select
+            id="codec-select"
+            value={codec}
+            onChange={handleCodecChange}
+            className="border border-gray-300 rounded-md px-2 py-1 focus:outline-none cursor-pointer"
+          >
+            <option value="opus">Opus (48 kHz)</option>
+            <option value="pcmu">PCMU (8 kHz)</option>
+            <option value="pcma">PCMA (8 kHz)</option>
+          </select>
+        </div>
       </div>
     </div>
   );
