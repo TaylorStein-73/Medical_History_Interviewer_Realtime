@@ -12,6 +12,7 @@ import BottomToolbar from "./components/BottomToolbar";
 import PWAInstaller from "./components/PWAInstaller";
 import PWADebugger from "./components/PWADebugger";
 import ConnectionStatus from "./components/ConnectionStatus";
+import MobileAudioWarning from "./components/MobileAudioWarning";
 
 // Types
 import { SessionStatus } from "@/app/types";
@@ -82,6 +83,28 @@ function App() {
     const el = document.createElement('audio');
     el.autoplay = true;
     el.style.display = 'none';
+    
+    // Mobile-specific audio optimizations to prevent feedback
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      el.volume = 0.6; // Further reduce volume on mobile to prevent feedback
+      el.setAttribute('playsinline', 'true'); // Prevent fullscreen on iOS
+      
+      // Add mobile-specific audio ducking
+      let duckingTimeout: NodeJS.Timeout;
+      const duckAudio = () => {
+        el.volume = 0.2; // Duck audio when user might be speaking
+        clearTimeout(duckingTimeout);
+        duckingTimeout = setTimeout(() => {
+          el.volume = 0.6; // Restore volume after delay
+        }, 2000);
+      };
+      
+      // Duck audio on any touch interaction
+      document.addEventListener('touchstart', duckAudio, { passive: true });
+      document.addEventListener('touchmove', duckAudio, { passive: true });
+    }
+    
     document.body.appendChild(el);
     return el;
   }, []);
@@ -114,7 +137,14 @@ function App() {
   const [isEventsPaneExpanded, setIsEventsPaneExpanded] =
     useState<boolean>(false);
   const [userText, setUserText] = useState<string>("");
-  const [isPTTActive, setIsPTTActive] = useState<boolean>(false);
+  const [isPTTActive, setIsPTTActive] = useState<boolean>(() => {
+    // Default to push-to-talk on mobile to prevent acoustic feedback
+    if (typeof window !== 'undefined') {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      return isMobile;
+    }
+    return false;
+  });
   const [isPTTUserSpeaking, setIsPTTUserSpeaking] = useState<boolean>(false);
   const [isAudioPlaybackEnabled, setIsAudioPlaybackEnabled] = useState<boolean>(
     () => {
@@ -123,6 +153,7 @@ function App() {
       return stored ? stored === 'true' : true;
     },
   );
+  const [isAISpeaking, setIsAISpeaking] = useState<boolean>(false);
 
   // Initialize the recording hook.
   const { startRecording, stopRecording, downloadRecording } =
@@ -182,7 +213,7 @@ function App() {
     if (sessionStatus === "CONNECTED") {
       updateSession();
     }
-  }, [isPTTActive]);
+  }, [isPTTActive, isAISpeaking]);
 
   const fetchEphemeralKey = async (): Promise<string | null> => {
     logClientEvent({ url: "/session" }, "fetch_session_token_request");
@@ -268,13 +299,16 @@ function App() {
     // Reflect Push-to-Talk UI state by (de)activating server VAD on the
     // backend. The Realtime SDK supports live session updates via the
     // `session.update` event.
+    const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     const turnDetection = isPTTActive
       ? null
       : {
           type: 'server_vad',
-          threshold: 0.9,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 500,
+          // More aggressive settings on mobile and when AI is speaking
+          threshold: isMobile || isAISpeaking ? 0.98 : 0.95,
+          prefix_padding_ms: isMobile ? 150 : 200,
+          silence_duration_ms: isMobile || isAISpeaking ? 1000 : 800,
           create_response: true,
         };
 
@@ -307,7 +341,11 @@ function App() {
 
   const handleTalkButtonDown = () => {
     if (sessionStatus !== 'CONNECTED') return;
-    interrupt();
+    
+    // Interrupt AI if it's speaking to prevent feedback
+    if (isAISpeaking) {
+      interrupt();
+    }
 
     setIsPTTUserSpeaking(true);
     sendClientEvent({ type: 'input_audio_buffer.clear' }, 'clear PTT buffer');
@@ -413,6 +451,26 @@ function App() {
     }
   }, [isAudioPlaybackEnabled]);
 
+  // Track AI speaking state to prevent feedback
+  useEffect(() => {
+    const audioElement = audioElementRef.current;
+    if (!audioElement) return;
+
+    const handlePlay = () => setIsAISpeaking(true);
+    const handlePause = () => setIsAISpeaking(false);
+    const handleEnded = () => setIsAISpeaking(false);
+
+    audioElement.addEventListener('play', handlePlay);
+    audioElement.addEventListener('pause', handlePause);
+    audioElement.addEventListener('ended', handleEnded);
+
+    return () => {
+      audioElement.removeEventListener('play', handlePlay);
+      audioElement.removeEventListener('pause', handlePause);
+      audioElement.removeEventListener('ended', handleEnded);
+    };
+  }, [audioElementRef.current]);
+
   // Ensure mute state is propagated to transport right after we connect or
   // whenever the SDK client reference becomes available.
   useEffect(() => {
@@ -444,6 +502,7 @@ function App() {
     <div className="text-base flex flex-col h-screen bg-gray-100 text-gray-800 relative">
       <PWAInstaller />
       <PWADebugger />
+      <MobileAudioWarning />
       <div className="p-5 text-lg font-semibold flex justify-between items-center">
         <div
           className="flex items-center cursor-pointer"
@@ -459,7 +518,8 @@ function App() {
             />
           </div>
           <div>
-            EngagedMD <span className="text-gray-500">Medical History Interview</span>
+            EngagedMD <span className="text-gray-500 hidden sm:inline">Medical History Interview</span>
+            <span className="text-gray-500 sm:hidden">MedHistory</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
