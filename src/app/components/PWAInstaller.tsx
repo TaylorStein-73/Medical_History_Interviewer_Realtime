@@ -33,14 +33,23 @@ export default function PWAInstaller() {
 
     // Register service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((registration) => {
-          console.log('[PWA] SW registered: ', registration);
-        })
-        .catch((registrationError) => {
-          console.log('[PWA] SW registration failed: ', registrationError);
-        });
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('/sw.js', { scope: '/' })
+          .then((registration) => {
+            console.log('[PWA] SW registered successfully:', registration);
+            
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+              console.log('[PWA] SW update found');
+            });
+          })
+          .catch((registrationError) => {
+            console.error('[PWA] SW registration failed:', registrationError);
+          });
+      });
+    } else {
+      console.log('[PWA] Service workers are not supported');
     }
 
     // Listen for the beforeinstallprompt event

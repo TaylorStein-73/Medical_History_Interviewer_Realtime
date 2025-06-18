@@ -15,8 +15,24 @@ interface PWAStatus {
 export default function PWADebugger() {
   const [status, setStatus] = useState<PWAStatus | null>(null);
   const [showDebugger, setShowDebugger] = useState(false);
+  const [debuggerEnabled, setDebuggerEnabled] = useState(false);
 
   useEffect(() => {
+    // Enable debugger with Ctrl+Shift+D
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        setDebuggerEnabled(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (!debuggerEnabled) return;
+
     const checkPWAStatus = async () => {
       const newStatus: PWAStatus = {
         serviceWorkerSupported: 'serviceWorker' in navigator,
@@ -54,23 +70,32 @@ export default function PWADebugger() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
+  }, [debuggerEnabled]);
 
-  if (!status) return null;
+  if (!debuggerEnabled || !status) return null;
 
   return (
     <div className="fixed bottom-4 left-4 z-50">
       <button
         onClick={() => setShowDebugger(!showDebugger)}
         className="bg-gray-800 text-white px-3 py-2 rounded-lg text-xs font-mono"
-        title="PWA Debug Info"
+        title="PWA Debug Info (Ctrl+Shift+D to enable)"
       >
         PWA Debug
       </button>
       
       {showDebugger && (
         <div className="absolute bottom-12 left-0 bg-gray-900 text-white p-4 rounded-lg shadow-lg w-80 text-xs font-mono">
-          <div className="mb-2 font-bold">PWA Status</div>
+          <div className="mb-2 font-bold flex justify-between items-center">
+            PWA Status
+            <button 
+              onClick={() => setDebuggerEnabled(false)}
+              className="text-red-400 hover:text-red-300"
+              title="Close debugger"
+            >
+              ✕
+            </button>
+          </div>
           <div className="space-y-1">
             <div>SW Supported: <span className={status.serviceWorkerSupported ? 'text-green-400' : 'text-red-400'}>
               {status.serviceWorkerSupported ? 'Yes' : 'No'}
@@ -97,6 +122,7 @@ export default function PWADebugger() {
             </div>
             <div className="mt-2 pt-2 border-t border-gray-700 text-yellow-400">
               <div>Note: Install button only shows when browser determines app is installable</div>
+              <div className="mt-1 text-gray-400">Press Ctrl+Shift+D to toggle this debugger</div>
             </div>
           </div>
         </div>
