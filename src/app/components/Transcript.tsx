@@ -73,7 +73,7 @@ function Transcript({
   return (
     <div className="flex flex-col flex-1 bg-white min-h-0 rounded-xl">
       <div className="flex flex-col flex-1 min-h-0">
-        <div className="flex items-center justify-between px-6 py-3 sticky top-0 z-10 text-base border-b bg-white rounded-t-xl">
+        <div className="hidden md:flex items-center justify-between px-6 py-3 sticky top-0 z-10 text-base border-b bg-white rounded-t-xl">
           <span className="font-semibold">Transcript</span>
           <div className="flex gap-x-2">
             <button
@@ -145,7 +145,7 @@ function Transcript({
                       <div
                         className={`text-xs ${
                           isUser ? "text-gray-400" : "text-gray-500"
-                        } font-mono`}
+                        } font-mono hidden`}
                       >
                         {timestamp}
                       </div>
@@ -167,7 +167,7 @@ function Transcript({
                   key={itemId}
                   className="flex flex-col justify-start items-start text-gray-500 text-sm"
                 >
-                  <span className="text-xs font-mono">{timestamp}</span>
+                  <span className="text-xs font-mono hidden">{timestamp}</span>
                   <div
                     className={`whitespace-pre-wrap flex items-center font-mono text-sm text-gray-800 ${
                       data ? "cursor-pointer" : ""

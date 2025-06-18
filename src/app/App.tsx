@@ -170,7 +170,7 @@ function App() {
       const currentAgent = selectedAgentConfigSet.find(
         (a) => a.name === selectedAgentName
       );
-      addTranscriptBreadcrumb(`Agent: ${selectedAgentName}`, currentAgent);
+      // addTranscriptBreadcrumb(`Agent: ${selectedAgentName}`, currentAgent);
       updateSession(!handoffTriggeredRef.current);
       // Reset flag after handling so subsequent effects behave normally
       handoffTriggeredRef.current = false;
