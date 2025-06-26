@@ -34,15 +34,13 @@ lifestyle_exposure:
         condition: Always
 
 - id: interview_complete
-  description: Generate and read a brief interview summary.
+  description: Complete the interview and show the summary.
   instructions:
-    - Call generate_interview_summary with transcript and YAML config.
-    - Read back the assigned tasks to the patient and explain why they are important.
-    - If there are no assigned tasks, then say "Thank you. Based on the information you provided, you are well prepared for your consultation with Dr. Stein. We will see you in a few weeks."
+    - Call generate_interview_summary with an empty tasks array to create the final SOAP note.
+    - Call complete_interview with the summary and an empty tasks array to trigger the completion state.
     - Thank patient and conclude.
   examples:
-    - "Thank you. based on the information you provided, we are going to assign you the following tasks. Completing these prior to your consultation with Dr. Stein will help ensure you're prepared for a productive consultation...."
-    - "Thank you. Based on the information you provided, you are well prepared for your consultation with Dr. Stein. We will see you in a few weeks."
+    - "Thank you for your time today. I've recorded your information for Dr. Stein to review. We look forward to seeing you soon."
   transitions:
     - next_step: null
-      condition: After the tasks are assigned and read to patient
+      condition: After summary is generated and patient is thanked

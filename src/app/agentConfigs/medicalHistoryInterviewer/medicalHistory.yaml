@@ -25,7 +25,7 @@ pregnancy_history:
     transitions:
       - next_step: pregnancy/2_total_pregnancies
         condition: "If answer is yes"
-      - next_step: interview_tasks
+      - next_step: interview_complete
         condition: "If answer is no"
 
   - id: pregnancy/2_total_pregnancies
@@ -109,34 +109,21 @@ lifestyle_exposure:
     examples:
       - Do you smoke, drink alcohol, or use recreational drugs?
     transitions:
-      - next_step: interview_tasks
+      - next_step: interview_complete
         condition: "Once substance use (and any details) confirmed"
 
 # ------------------------------------------------------------
 # Interview Completion
 # ------------------------------------------------------------
 
-- id: interview_tasks
-  description: "Generate and discuss the patient's next-step task list."
-  instructions:
-    - "IMPORTANT: Call the generate_task_list tool with the full conversation transcript."
-    - "Read the tasks (if any) to the patient and explain why each is important."
-    - "If there are no tasks, reassure the patient they are well prepared for their upcoming appointment."
-    - "Tell the patient that the tasks will be added to their EngagedMD portal, where they can complete them prior to their appointment."
-  examples:
-    - "Based on what you've told me, here are a few next steps I'd recommend before your appointment..."
-  transitions:
-    - next_step: interview_complete
-      condition: "After tasks have been discussed"
-
 - id: interview_complete
-  description: "Generate the final SOAP summary (with tasks in Plan) and conclude."
+  description: "Complete the interview and show the summary."
   instructions:
-    - "IMPORTANT:Call generate_interview_summary with the transcript, YAML config, and tasks array to create the final note."
-    - "Let the patient know the summary has been recorded for their clinician."
+    - "Call generate_interview_summary with an empty tasks array to create the final SOAP note."
+    - "CRITICAL: Call complete_interview with the summary and an empty tasks array to trigger the completion state."
     - "Thank the patient warmly and conclude the call."
   examples:
-    - "Thank you for your time today. I've recorded your information and next steps for Dr. Stein to review. We look forward to seeing you soon."
+    - "Thank you for your time today. I've recorded your information for Dr. Stein to review. We look forward to seeing you soon."
   transitions:
     - next_step: null
       condition: "After summary is generated and patient is thanked"

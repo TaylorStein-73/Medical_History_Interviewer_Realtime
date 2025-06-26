@@ -13,6 +13,7 @@ import PWAInstaller from "./components/PWAInstaller";
 import PWADebugger from "./components/PWADebugger";
 import ConnectionStatus from "./components/ConnectionStatus";
 import MobileAudioWarning from "./components/MobileAudioWarning";
+import InterviewSummary from "./components/InterviewSummary";
 
 // Types
 import { SessionStatus } from "@/app/types";
@@ -23,6 +24,7 @@ import { useTranscript } from "@/app/contexts/TranscriptContext";
 import { useEvent } from "@/app/contexts/EventContext";
 import { useRealtimeSession } from "./hooks/useRealtimeSession";
 import { createModerationGuardrail } from "@/app/agentConfigs/guardrails";
+import { InterviewProvider, useInterview } from "./contexts/InterviewContext";
 
 // Agent configs
 import { allAgentSets, defaultAgentSetKey } from "@/app/agentConfigs";
@@ -34,18 +36,25 @@ import { simpleHandoffScenario } from "@/app/agentConfigs/simpleHandoff";
 import { medicalHistoryInterviewerScenario } from '@/app/agentConfigs/medicalHistoryInterviewer';
 import { medicalHistoryInterviewerCompanyName } from '@/app/agentConfigs/medicalHistoryInterviewer';
 
+interface AgentContext {
+  extraContext?: {
+    completeInterview?: (summary: string, tasks: string[]) => void;
+    addTranscriptBreadcrumb?: (breadcrumb: string) => void;
+  };
+}
+
 // Map used by connect logic for scenarios defined via the SDK.
-const sdkScenarioMap: Record<string, RealtimeAgent[]> = {
-  simpleHandoff: simpleHandoffScenario,
-  customerServiceRetail: customerServiceRetailScenario,
-  chatSupervisor: chatSupervisorScenario,
-  medicalHistoryInterviewer: medicalHistoryInterviewerScenario,
+const sdkScenarioMap: Record<string, RealtimeAgent<AgentContext>[]> = {
+  simpleHandoff: simpleHandoffScenario as unknown as RealtimeAgent<AgentContext>[],
+  customerServiceRetail: customerServiceRetailScenario as unknown as RealtimeAgent<AgentContext>[],
+  chatSupervisor: chatSupervisorScenario as unknown as RealtimeAgent<AgentContext>[],
+  medicalHistoryInterviewer: medicalHistoryInterviewerScenario as unknown as RealtimeAgent<AgentContext>[],
 };
 
 import useAudioDownload from "./hooks/useAudioDownload";
 import { useHandleSessionHistory } from "./hooks/useHandleSessionHistory";
 
-function App() {
+function AppContent() {
   const searchParams = useSearchParams()!;
 
   // ---------------------------------------------------------------------
@@ -70,9 +79,7 @@ function App() {
   const { logClientEvent, logServerEvent } = useEvent();
 
   const [selectedAgentName, setSelectedAgentName] = useState<string>("");
-  const [selectedAgentConfigSet, setSelectedAgentConfigSet] = useState<
-    RealtimeAgent[] | null
-  >(null);
+  const [selectedAgentConfigSet, setSelectedAgentConfigSet] = useState<RealtimeAgent<AgentContext>[] | null>(null);
 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   // Ref to identify whether the latest agent switch came from an automatic handoff
@@ -170,6 +177,8 @@ function App() {
 
   useHandleSessionHistory();
 
+  const { isComplete, summary, tasks, completeInterview, resetInterview } = useInterview();
+
   useEffect(() => {
     let finalAgentConfig = searchParams.get("agentConfig");
     if (!finalAgentConfig || !allAgentSets[finalAgentConfig]) {
@@ -232,6 +241,8 @@ function App() {
   };
 
   const connectToRealtime = async () => {
+    console.log('Starting connectToRealtime');
+    resetInterview();
     const agentSetKey = searchParams.get("agentConfig") || "default";
     if (sdkScenarioMap[agentSetKey]) {
       if (sessionStatus !== "DISCONNECTED") return;
@@ -256,15 +267,27 @@ function App() {
           : chatSupervisorCompanyName;
         const guardrail = createModerationGuardrail(companyName);
 
-        await connect({
-          getEphemeralKey: async () => EPHEMERAL_KEY,
-          initialAgents: reorderedAgents,
-          audioElement: sdkAudioElement,
-          outputGuardrails: [guardrail],
+        // Create a strongly typed context object
+        const context: AgentContext = {
           extraContext: {
             addTranscriptBreadcrumb,
-          },
+            completeInterview: (summary: string, tasks: string[]) => {
+              console.log('Calling completeInterview from SDK context with:', { summary, tasks });
+              completeInterview(summary, tasks);
+              console.log('Called completeInterview from SDK context');
+            }
+          }
+        };
+
+        console.log('Connecting to realtime with context:', context);
+        await connect({
+          getEphemeralKey: async () => EPHEMERAL_KEY,
+          initialAgents: reorderedAgents as unknown as RealtimeAgent<unknown>[],
+          audioElement: sdkAudioElement,
+          outputGuardrails: [guardrail],
+          extraContext: context.extraContext,
         });
+        console.log('Connected to realtime successfully');
       } catch (err) {
         console.error("Error connecting via SDK:", err);
         setSessionStatus("DISCONNECTED");
@@ -496,7 +519,31 @@ function App() {
     };
   }, [sessionStatus]);
 
+  // Add this effect to handle interview completion
+  useEffect(() => {
+    console.log('Interview completion effect triggered:', { 
+      isComplete, 
+      sessionStatus,
+      summary,
+      tasks 
+    });
+    if (isComplete) {
+      console.log('Interview is complete, disconnecting from realtime');
+      // Disconnect from realtime when interview is complete
+      disconnectFromRealtime();
+      setSessionStatus("DISCONNECTED");
+    }
+  }, [isComplete, summary, tasks]);
+
   const agentSetKey = searchParams.get("agentConfig") || "default";
+
+  useEffect(() => {
+    if (agentSetKey && sdkScenarioMap[agentSetKey]) {
+      setSelectedAgentConfigSet(sdkScenarioMap[agentSetKey] as unknown as RealtimeAgent<AgentContext>[]);
+    } else {
+      setSelectedAgentConfigSet(null);
+    }
+  }, [agentSetKey]);
 
   return (
     <div className="text-base flex flex-col h-screen bg-gray-100 text-gray-800 relative">
@@ -598,12 +645,20 @@ function App() {
           setUserText={setUserText}
           onSendMessage={handleSendTextMessage}
           downloadRecording={downloadRecording}
-          canSend={
-            sessionStatus === "CONNECTED"
-          }
+          canSend={sessionStatus === "CONNECTED" && !isComplete}
         />
 
         <Events isExpanded={isEventsPaneExpanded} />
+
+        <InterviewSummary
+          isOpen={isComplete}
+          onClose={() => {
+            resetInterview();
+            connectToRealtime();
+          }}
+          summary={summary}
+          tasks={tasks}
+        />
       </div>
 
       <BottomToolbar
@@ -625,4 +680,8 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AppContent />
+  );
+}

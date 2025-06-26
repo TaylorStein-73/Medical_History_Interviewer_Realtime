@@ -10,7 +10,14 @@ import conversationStatesYaml from './medicalHistory.yaml?raw';
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import nextStepsRulesYaml from './nextStepsRules.yaml?raw';
 
-export const medicalHistoryAgent = new RealtimeAgent({
+interface AgentContext {
+  extraContext?: {
+    completeInterview?: (summary: string, tasks: string[]) => void;
+    addTranscriptBreadcrumb?: (breadcrumb: string) => void;
+  };
+}
+
+export const medicalHistoryAgent = new RealtimeAgent<AgentContext>({
   name: 'medicalHistory',
   voice: 'sage',
   handoffDescription:
@@ -45,7 +52,7 @@ Even-tempered and supportive.  You acknowledge feelings ("I understand that can 
 Occasionally use light verbal fillers ("hm," "let's see") to sound natural, but never overuse them.
 
 ## Pacing
-Moderate, conversational pace.  Pause briefly after each question so patients can respond; adjust speed if the patient seems anxious or confused.
+Very fast paced and keep the conversation moving.  Pause briefly after each question so patients can respond; adjust speed if the patient seems anxious or confused.
 
 ## Other details
 None specified.
@@ -55,12 +62,9 @@ None specified.
 - **Always** repeat back critical details such as names, dates, phone numbers, medication names, or test results to confirm accurate spelling or values before proceeding.  
 - If the caller corrects any detail, acknowledge the correction plainly ("Thank you for clarifying; I have updated that to 5 mg daily") and confirm the new value.
 - **CRITICAL**: When you reach the interview_complete sequence:
-  1. Call generate_task_list with the full transcript to create the patient task list.
-  2. Read the tasks to the patient, explaining why each is important (if none, reassure the patient).
-  3. Immediately afterwards, call generate_interview_summary passing the tasks array so the final SOAP note is stored for the clinician. You do not need to read the entire note to the patient — a brief acknowledgment is sufficient.
-  4. Thank the patient and conclude.
-
-Make sure to clarify that reading tasks is for demonstration purposes; normally clinicians would review the note offline.
+  1. Call generate_interview_summary with an empty tasks array to create the final SOAP note.
+  2. Call complete_interview with the summary and an empty tasks array to trigger the completion state.
+  3. Thank the patient and conclude.
 
 # Conversation States (YAML)
 ${conversationStatesYaml}
@@ -68,38 +72,10 @@ ${conversationStatesYaml}
 `,
   handoffs: [],
   tools: [
-    // 1) Generate task list
-    tool({
-      name: 'generate_task_list',
-      description: 'Generate a list of patient follow-up tasks based on the interview transcript and YAML rules',
-      parameters: {
-        type: 'object',
-        properties: {
-          transcript: { type: 'string', description: 'Full conversation transcript' },
-          next_steps_rules_yaml: { type: 'string', description: 'YAML rule set for tasks' }
-        },
-        required: ['transcript'],
-        additionalProperties: false
-      },
-      execute: async (input: any) => {
-        const { transcript, next_steps_rules_yaml } = (input as { transcript: string; next_steps_rules_yaml?: string }) ?? {};
-        const rulesYaml = next_steps_rules_yaml || nextStepsRulesYaml;
-
-        const response = await fetch('/api/generate-task-list', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript, next_steps_rules_yaml: rulesYaml })
-        });
-
-        const result = await response.json();
-        return { tasks: result.tasks };
-      }
-    }),
-
-    // 2) Generate final SOAP summary that embeds tasks
+    // Generate final SOAP summary
     tool({
       name: 'generate_interview_summary',
-      description: 'Generate the final SOAP summary including tasks in the Plan section',
+      description: 'Generate the final SOAP summary',
       parameters: {
         type: 'object',
         properties: {
@@ -108,7 +84,7 @@ ${conversationStatesYaml}
           tasks: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Array of patient tasks to embed in Plan (output of generate_task_list)'
+            description: 'Array of patient tasks to embed in Plan (always empty)'
           }
         },
         required: ['transcript', 'yaml_config', 'tasks'],
@@ -125,6 +101,41 @@ ${conversationStatesYaml}
 
         const result = await response.json();
         return { summary: result.summary };
+      }
+    }),
+
+    // Interview completion
+    tool({
+      name: 'complete_interview',
+      description: 'Mark the interview as complete and show the summary view',
+      parameters: {
+        type: 'object',
+        properties: {
+          summary: { type: 'string', description: 'The final SOAP note summary' },
+          tasks: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Array of tasks for the patient (always empty)'
+          }
+        },
+        required: ['summary', 'tasks'],
+        additionalProperties: false
+      },
+      execute: async (input: any, details: any) => {
+        const { summary, tasks } = input as { summary: string; tasks: string[] };
+        console.log('complete_interview tool called with:', { summary, tasks });
+        const ctx = details?.context;
+        console.log('complete_interview context:', ctx);
+        
+        if (ctx?.completeInterview) {
+          console.log('Calling completeInterview function');
+          ctx.completeInterview(summary, tasks);
+          console.log('completeInterview function called successfully');
+        } else {
+          console.warn('completeInterview function not found in context');
+        }
+        
+        return { success: true };
       }
     })
   ]
